@@ -13,18 +13,31 @@
   2. Drop your files in with these EXACT names (or edit the
      paths below to match your own filenames):
 
-     assets/photo1.jpg      -> first poster photo
-     assets/photo2.jpg      -> second poster photo
-     assets/photo3.jpg      -> third poster photo
-     assets/video1.mp4      -> first video
-     assets/video2.mp4      -> second video
-     assets/song.mp3        -> the personalised audio recording
+     assets/photo1.jpg      -> first photo (top-left)
+     assets/photo2.jpg      -> second photo (top-right)
+     assets/photo3.jpg      -> third photo (bottom-center)
+     assets/video1.mp4      -> first video (top page)
+     assets/video2.mp4      -> second video (bottom page)
+     assets/message.mp3     -> YOUR recorded voice message
+     assets/bg-music.mp3    -> ambient background music (loops)
      assets/reveal.jpg      -> the photo shown when she taps "Yes"
 
   3. Search this file for "REPLACE" to find every spot where you
      should swap in your own note/message text.
   4. Push everything (index.html, style.css, script.js, assets/)
      to your GitHub repo and enable GitHub Pages.
+
+  SLIDE MAP (6 slides total, one swipe = one slide):
+     1. hero      - opening line + name
+     2. photos    - 3 tilted journal pages (top-left, top-right, bottom-center)
+     3. videos    - 2 videos, each on its own journal page (top, bottom)
+     4. player    - your recorded message. Background music auto-pauses
+                    here and resumes once the recording ends.
+     5. question  - "does she love me?" Yes -> big heart + roses.
+                    No dodges the cursor; only after it's actually
+                    pressed more than 5 times does the heartbreak show.
+     6. finale    - the closing note. Only this slide has the
+                    floating kiss + rose animation.
   ============================================================
 -->
 
@@ -35,7 +48,6 @@
 <body>
 
 <!-- ============ OPENING ANIMATION ============ -->
-<!-- Shown first. Fades/unfolds away once she taps it, then reveals the site. -->
 <div id="introOverlay" class="intro-overlay">
   <div class="intro-glow"></div>
   <p class="intro-eyebrow">a little universe, just for</p>
@@ -46,18 +58,20 @@
 <!-- Starfield / 3D depth canvas, sits behind everything -->
 <canvas id="stars"></canvas>
 
-<!-- floating "now playing" indicator, visible on every section once the song starts -->
+<!-- floating "now playing" indicator -->
 <div id="miniPlayer" class="mini-player hidden">
   <span class="mini-note">&#9835;</span>
   <span class="mini-label">now playing</span>
 </div>
 
-<!-- side progress dots -->
+<!-- audio: ambient background music + her personal recorded message -->
+<audio id="bgMusic" src="assets/bg-music.mp3" loop preload="none"></audio>
+<audio id="message" src="assets/message.mp3" preload="none"></audio>
+
+<!-- side progress dots, one per slide -->
 <nav class="dots" aria-hidden="true">
   <span data-target="hero" class="dot active"></span>
-  <span data-target="poster1" class="dot"></span>
-  <span data-target="poster2" class="dot"></span>
-  <span data-target="poster3" class="dot"></span>
+  <span data-target="photos" class="dot"></span>
   <span data-target="videos" class="dot"></span>
   <span data-target="player" class="dot"></span>
   <span data-target="question" class="dot"></span>
@@ -65,14 +79,15 @@
 </nav>
 
 <main class="scroller">
+<div class="track">
 
-  <!-- ============ HERO ============ -->
+  <!-- ============ SLIDE 1: HERO ============ -->
   <section id="hero" class="panel hero">
     <p class="eyebrow">this universe is dedicated to</p>
     <h1 class="display italic">Happy Birthday,<br><span class="name">Zua</span></h1>
     <p class="lead">
       REPLACE: your opening romantic message goes here — a few sentences
-      that set the tone before she scrolls any further.
+      that set the tone before she swipes any further.
     </p>
     <div class="scroll-hint">
       <span>swipe up</span>
@@ -80,47 +95,40 @@
     </div>
   </section>
 
-  <!-- ============ POSTER 1 ============ -->
-  <section id="poster1" class="panel poster-panel">
-    <div class="poster tilt-a">
-      <div class="poster-photo">
-        <img src="assets/photo1.jpg" alt="A memory, photo one" onerror="this.style.display='none'; this.parentElement.classList.add('img-missing')">
+  <!-- ============ SLIDE 2: THREE PHOTOS, ONE SLIDE ============ -->
+  <section id="photos" class="panel photos-panel">
+    <div class="photo-grid">
+      <div class="poster poster--small tilt-a pos-top-left">
+        <div class="poster-photo">
+          <img src="assets/photo1.jpg" alt="A memory, photo one" onerror="this.style.display='none'; this.parentElement.classList.add('img-missing')">
+        </div>
+        <p class="poster-note">REPLACE: note one</p>
       </div>
-      <p class="poster-note">REPLACE: note for photo one</p>
+      <div class="poster poster--small tilt-b pos-top-right">
+        <div class="poster-photo">
+          <img src="assets/photo2.jpg" alt="A memory, photo two" onerror="this.style.display='none'; this.parentElement.classList.add('img-missing')">
+        </div>
+        <p class="poster-note">REPLACE: note two</p>
+      </div>
+      <div class="poster poster--small tilt-c pos-bottom-center">
+        <div class="poster-photo">
+          <img src="assets/photo3.jpg" alt="A memory, photo three" onerror="this.style.display='none'; this.parentElement.classList.add('img-missing')">
+        </div>
+        <p class="poster-note">REPLACE: note three</p>
+      </div>
     </div>
   </section>
 
-  <!-- ============ POSTER 2 ============ -->
-  <section id="poster2" class="panel poster-panel">
-    <div class="poster tilt-b">
-      <div class="poster-photo">
-        <img src="assets/photo2.jpg" alt="A memory, photo two" onerror="this.style.display='none'; this.parentElement.classList.add('img-missing')">
-      </div>
-      <p class="poster-note">REPLACE: note for photo two</p>
-    </div>
-  </section>
-
-  <!-- ============ POSTER 3 ============ -->
-  <section id="poster3" class="panel poster-panel">
-    <div class="poster tilt-c">
-      <div class="poster-photo">
-        <img src="assets/photo3.jpg" alt="A memory, photo three" onerror="this.style.display='none'; this.parentElement.classList.add('img-missing')">
-      </div>
-      <p class="poster-note">REPLACE: note for photo three</p>
-    </div>
-  </section>
-
-  <!-- ============ VIDEOS ============ -->
+  <!-- ============ SLIDE 3: TWO VIDEOS, ONE SLIDE ============ -->
   <section id="videos" class="panel videos-panel">
-    <h2 class="display italic section-title">little moments</h2>
     <div class="video-stack">
-      <div class="video-card tilt-a">
+      <div class="poster video-card tilt-a">
         <video controls playsinline poster="assets/photo1.jpg">
           <source src="assets/video1.mp4" type="video/mp4">
         </video>
         <p class="poster-note">REPLACE: note for video one</p>
       </div>
-      <div class="video-card tilt-b">
+      <div class="poster video-card tilt-b">
         <video controls playsinline poster="assets/photo2.jpg">
           <source src="assets/video2.mp4" type="video/mp4">
         </video>
@@ -129,7 +137,7 @@
     </div>
   </section>
 
-  <!-- ============ CD / AUDIO PLAYER ============ -->
+  <!-- ============ SLIDE 4: RECORDED MESSAGE ============ -->
   <section id="player" class="panel player-panel">
     <h2 class="display italic section-title">a recorded message</h2>
     <div class="cd-wrap">
@@ -137,13 +145,12 @@
         <div class="cd-hole"></div>
       </div>
     </div>
-    <audio id="song" src="assets/song.mp3" preload="none"></audio>
-    <button id="playBtn" class="play-btn" aria-label="Play song">
+    <button id="playBtn" class="play-btn" aria-label="Play message">
       <span class="icon">&#9658;</span>
     </button>
   </section>
 
-  <!-- ============ QUESTION ============ -->
+  <!-- ============ SLIDE 5: QUESTION ============ -->
   <section id="question" class="panel question-panel">
     <div class="question-photo">
       <img src="assets/photo3.jpg" alt="" onerror="this.style.display='none'">
@@ -161,6 +168,10 @@
 
     <div id="revealModal" class="reveal-modal hidden">
       <div class="reveal-card">
+        <span class="rose r1">&#127801;</span>
+        <span class="rose r2">&#127801;</span>
+        <span class="rose r3">&#127801;</span>
+        <span class="rose r4">&#127801;</span>
         <img src="assets/reveal.jpg" class="heart-clip" alt="Reveal photo" onerror="this.style.display='none'">
         <p class="poster-note">REPLACE: caption shown with the reveal photo</p>
         <button id="closeReveal" class="close-reveal">close</button>
@@ -168,7 +179,7 @@
     </div>
   </section>
 
-  <!-- ============ FINALE ============ -->
+  <!-- ============ SLIDE 6: FINALE ============ -->
   <section id="finale" class="panel finale-panel">
     <p class="script-note">
       REPLACE: your final, most heartfelt happy birthday note goes here —
@@ -177,6 +188,7 @@
     <p class="signoff">— [REPLACE: your name]</p>
   </section>
 
+</div>
 </main>
 
 <script src="script.js"></script>
