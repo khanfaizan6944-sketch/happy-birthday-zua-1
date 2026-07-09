@@ -1,482 +1,289 @@
-:root{
-  --night: #1B1035;
-  --violet: #3B2063;
-  --lavender: #C9AEE8;
-  --pink: #F6C9DA;
-  --cream: #FBF4F8;
-  --gold: #E8C77E;
-}
+/* ============================================================
+   OPENING ANIMATION
+   ============================================================ */
+(function introAnimation(){
+  const overlay = document.getElementById('introOverlay');
+  const btn = document.getElementById('introBtn');
+  btn?.addEventListener('click', () => {
+    overlay.classList.add('opening');
+    setTimeout(() => overlay.remove(), 1100);
 
-*{ box-sizing:border-box; margin:0; padding:0; }
+    // start the ambient background music right on this same tap,
+    // since it's a genuine user gesture
+    const bgMusic = document.getElementById('bgMusic');
+    bgMusic.play().then(() => {
+      document.getElementById('miniPlayer').classList.remove('hidden');
+    }).catch(() => { /* she hasn't added assets/bg-music.mp3 yet */ });
+  });
+})();
 
-html,body{
-  height:100%;
-  background: var(--night);
-  color: var(--cream);
-  font-family: 'Quicksand', sans-serif;
-  overflow:hidden;
-}
+/* ============================================================
+   STARFIELD — lightweight 3D-style particle field with parallax
+   ============================================================ */
+(function starfield(){
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let w, h, stars = [];
+  const STAR_COUNT = 160;
 
-.display{ font-family:'Cormorant Garamond', serif; font-weight:600; }
-.italic{ font-style:italic; }
+  function resize(){ w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize);
+  resize();
 
-#stars{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  z-index:0;
-  background: radial-gradient(ellipse at 50% 20%, var(--violet) 0%, var(--night) 70%);
-}
+  function makeStar(){
+    return {
+      x: Math.random() * w, y: Math.random() * h,
+      z: Math.random() * 1 + 0.15,
+      r: Math.random() * 1.4 + 0.3,
+      twinkle: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.15 + 0.02
+    };
+  }
+  for (let i = 0; i < STAR_COUNT; i++) stars.push(makeStar());
 
-/* ---------- opening animation ---------- */
-.intro-overlay{
-  position:fixed;
-  inset:0;
-  z-index:50;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap: 1rem;
-  background: radial-gradient(ellipse at 50% 50%, var(--violet) 0%, var(--night) 75%);
-  transition: opacity 1s ease, transform 1s ease;
-}
-.intro-overlay.opening{ opacity:0; transform: scale(1.08); pointer-events:none; }
-.intro-glow{
-  position:absolute;
-  width: 40px; height:40px;
-  border-radius:50%;
-  background: var(--pink);
-  filter: blur(20px);
-  opacity:.7;
-  animation: introPulse 2.8s ease-in-out infinite;
-}
-@keyframes introPulse{
-  0%,100%{ transform: scale(1); opacity:.5; }
-  50%{ transform: scale(9); opacity:.9; }
-}
-.intro-eyebrow{
-  position:relative;
-  font-size:.75rem;
-  letter-spacing:.25em;
-  text-transform:uppercase;
-  color: var(--lavender);
-  opacity:0;
-  animation: introFadeUp 1s ease .3s forwards;
-}
-.intro-name{
-  position:relative;
-  font-size: clamp(2rem, 9vw, 3rem);
-  color: var(--gold);
-  opacity:0;
-  animation: introFadeUp 1s ease .7s forwards;
-}
-.intro-btn{
-  position:relative;
-  margin-top: 1.6rem;
-  padding: .7rem 2.2rem;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.08);
-  color: var(--cream);
-  font-family:'Quicksand', sans-serif;
-  letter-spacing:.05em;
-  cursor:pointer;
-  opacity:0;
-  animation: introFadeUp 1s ease 1.2s forwards;
-}
-@keyframes introFadeUp{
-  from{ opacity:0; transform: translateY(14px); }
-  to{ opacity:1; transform: translateY(0); }
-}
+  let parallaxX = 0, parallaxY = 0, targetX = 0, targetY = 0;
+  window.addEventListener('mousemove', (e) => {
+    targetX = (e.clientX / w - 0.5) * 18;
+    targetY = (e.clientY / h - 0.5) * 18;
+  });
+  window.addEventListener('deviceorientation', (e) => {
+    if (e.gamma == null) return;
+    targetX = Math.max(-18, Math.min(18, e.gamma / 3));
+    targetY = Math.max(-18, Math.min(18, (e.beta - 40) / 4));
+  });
 
-/* ---------- mini "now playing" indicator ---------- */
-.mini-player{
-  position:fixed;
-  top: 18px;
-  left: 18px;
-  z-index:6;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding: 6px 14px 6px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(8px);
-  font-size:.7rem;
-  letter-spacing:.05em;
-  color: rgba(251,244,248,0.85);
-  transition: opacity .4s ease, transform .4s ease;
-  cursor:pointer;
-}
-.mini-player.hidden{ opacity:0; transform: translateY(-8px); pointer-events:none; }
-.mini-note{ display:inline-block; color: var(--pink); animation: notebob 1.2s ease-in-out infinite; }
-@keyframes notebob{
-  0%,100%{ transform: translateY(0) rotate(-4deg); }
-  50%{ transform: translateY(-3px) rotate(4deg); }
-}
+  function draw(){
+    ctx.clearRect(0, 0, w, h);
+    parallaxX += (targetX - parallaxX) * 0.04;
+    parallaxY += (targetY - parallaxY) * 0.04;
+    for (const s of stars){
+      s.twinkle += s.speed;
+      s.y += s.speed * 0.4;
+      if (s.y > h) s.y = 0;
+      const dx = parallaxX * s.z, dy = parallaxY * s.z;
+      const alpha = 0.5 + Math.sin(s.twinkle) * 0.4;
+      const size = s.r * s.z * 2;
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(251,244,248,${Math.max(0.15, alpha).toFixed(2)})`;
+      ctx.arc(s.x + dx, s.y + dy, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
 
-/* ---------- side nav dots ---------- */
-.dots{
-  position:fixed;
-  right:18px;
-  top:50%;
-  transform:translateY(-50%);
-  z-index:5;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-.dot{
-  width:7px; height:7px;
-  border-radius:50%;
-  background: rgba(251,244,248,0.25);
-  transition: background .3s, transform .3s;
-  cursor:pointer;
-}
-.dot.active{ background: var(--pink); transform:scale(1.4); }
+/* ============================================================
+   PAGER — one swipe / wheel notch / arrow key = exactly one
+   slide. No native scrolling involved, so nothing can be
+   skipped or glide past a slide.
+   ============================================================ */
+const pager = (function pagedScroll(){
+  const track = document.querySelector('.track');
+  const panels = Array.from(document.querySelectorAll('.panel'));
+  const dots = document.querySelectorAll('.dot');
+  let current = 0;
+  let locked = false;
+  const LOCK_MS = 800;
 
-/* ---------- paging track ---------- */
-.scroller{
-  position:relative;
-  z-index:1;
-  height:100vh;
-  overflow:hidden;
-}
-.track{
-  display:flex;
-  flex-direction:column;
-  width:100%;
-  height:100%;
-  transition: transform .7s cubic-bezier(.65,0,.35,1);
-  will-change: transform;
-}
-.panel{
-  height:100vh;
-  width:100%;
-  flex: 0 0 100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding: 6vh 6vw;
-  position:relative;
-}
+  function render(){
+    track.style.transform = `translateY(-${current * 100}vh)`;
+    dots.forEach(d => d.classList.toggle('active', d.dataset.target === panels[current].id));
+    document.dispatchEvent(new CustomEvent('slidechange', {
+      detail: { id: panels[current].id, index: current }
+    }));
+  }
 
-/* ---------- hero ---------- */
-.hero .eyebrow{
-  letter-spacing:.2em;
-  text-transform:uppercase;
-  font-size:.7rem;
-  color: var(--lavender);
-  margin-bottom:1.2rem;
-}
-.hero h1{
-  font-size: clamp(2.2rem, 8vw, 3.6rem);
-  line-height:1.15;
-  background: linear-gradient(120deg, var(--pink), var(--lavender));
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-}
-.hero .name{ color: var(--gold); -webkit-text-fill-color: var(--gold); }
-.hero .lead{
-  max-width:38ch;
-  margin: 1.6rem auto 0;
-  color: rgba(251,244,248,0.8);
-  font-size:.95rem;
-  line-height:1.6;
-}
-.scroll-hint{
-  position:absolute;
-  bottom:6vh;
-  left:50%;
-  transform:translateX(-50%);
-  font-size:.7rem;
-  letter-spacing:.15em;
-  text-transform:uppercase;
-  color: rgba(251,244,248,0.5);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:6px;
-}
-.arrow{
-  width:8px; height:8px;
-  border-right:1px solid var(--lavender);
-  border-bottom:1px solid var(--lavender);
-  transform:rotate(45deg);
-  animation: bob 1.6s ease-in-out infinite;
-}
-@keyframes bob{
-  0%,100%{ transform:rotate(45deg) translate(0,0); opacity:.5;}
-  50%{ transform:rotate(45deg) translate(4px,4px); opacity:1;}
-}
+  function goTo(index){
+    if (index < 0 || index >= panels.length || locked) return;
+    locked = true;
+    current = index;
+    render();
+    setTimeout(() => { locked = false; }, LOCK_MS);
+  }
 
-/* ---------- journal-page poster cards ---------- */
-.poster{
-  background: #FBF6EC;
-  background-image: repeating-linear-gradient(
-    to bottom, transparent 0, transparent 33px,
-    rgba(75,50,110,0.16) 33px, rgba(75,50,110,0.16) 34px
-  );
-  background-position: 0 148px;
-  border: none;
-  border-radius: 4px;
-  padding: 16px 16px 20px;
-  width: min(84vw, 300px);
-  min-height: min(70vh, 430px);
-  box-shadow: 0 25px 45px rgba(0,0,0,0.45), 0 2px 0 rgba(0,0,0,0.05);
-  transition: transform .4s ease;
-  position:relative;
-}
-.poster::before{
-  content:"";
-  position:absolute;
-  top: 6px; left:50%;
-  width: 60px; height:18px;
-  background: rgba(246,201,218,0.55);
-  transform: translateX(-50%) rotate(-2deg);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-.poster:hover{ transform: scale(1.03) rotate(0deg) !important; }
+  dots.forEach((dot, i) => dot.addEventListener('click', () => goTo(i)));
 
-.poster-photo{
-  width:100%;
-  aspect-ratio: 4/3.4;
-  overflow:hidden;
-  border-radius:2px;
-  border: 6px solid #fff;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-  background: linear-gradient(160deg, var(--violet), var(--night));
-  display:flex; align-items:center; justify-content:center;
-}
-.poster-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
-.poster-photo.img-missing::after{
-  content:"add photo here";
-  color: rgba(251,244,248,0.4);
-  font-size:.7rem;
-}
+  const scroller = document.querySelector('.scroller');
+  scroller.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (locked) return;
+    goTo(current + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
 
-.poster-note{
-  color: #4B3268;
-  font-family: 'Caveat', cursive;
-  font-size: 1.3rem;
-  line-height: 33px;
-  margin-top: .6rem;
-}
+  let touchStartY = 0;
+  scroller.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+  scroller.addEventListener('touchend', (e) => {
+    const dy = touchStartY - e.changedTouches[0].clientY;
+    if (Math.abs(dy) < 40 || locked) return;
+    goTo(current + (dy > 0 ? 1 : -1));
+  }, { passive: true });
 
-.tilt-a{ transform: rotate(-8deg); }
-.tilt-b{ transform: rotate(6deg); }
-.tilt-c{ transform: rotate(-3deg); }
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'PageDown') goTo(current + 1);
+    if (e.key === 'ArrowUp' || e.key === 'PageUp') goTo(current - 1);
+  });
 
-/* ---------- photo grid: top-left / top-right / bottom-center ---------- */
-.photo-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: auto;
-  gap: 14px 10px;
-  width:100%;
-  max-width: 440px;
-  align-items:start;
-}
-.poster--small{
-  width: min(40vw, 155px);
-  min-height: unset;
-  padding: 10px 10px 12px;
-  background-position: 0 84px;
-}
-.poster--small .poster-note{ font-size:1rem; line-height:23px; margin-top:.4rem; }
-.pos-top-left{ grid-column:1; grid-row:1; justify-self:start; }
-.pos-top-right{ grid-column:2; grid-row:1; justify-self:end; }
-.pos-bottom-center{
-  grid-column: 1 / 3;
-  grid-row:2;
-  justify-self:center;
-  width: min(48vw, 185px) !important;
-  margin-top: 6px;
-}
+  render(); // set initial dot state
+  return { goTo, get current(){ return current; } };
+})();
 
-/* ---------- videos ---------- */
-.video-stack{
-  display:flex;
-  flex-direction:column;
-  gap: 1.6rem;
-  align-items:center;
-}
-.video-card{ width: min(80vw, 280px); }
-.video-card video{ width:100%; border: 6px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.25); display:block; background:#000; }
+/* ============================================================
+   RECORDED MESSAGE SLIDE — background music ducks out
+   automatically while her message plays, and resumes after.
+   ============================================================ */
+(function messagePlayer(){
+  const cd = document.getElementById('cd');
+  const btn = document.getElementById('playBtn');
+  const message = document.getElementById('message');
+  const bgMusic = document.getElementById('bgMusic');
+  const miniPlayer = document.getElementById('miniPlayer');
+  let bgWasPlaying = false;
 
-/* ---------- CD player ---------- */
-.section-title{ font-size: clamp(1.6rem,6vw,2.2rem); margin-bottom:2rem; color: var(--pink); }
-.cd-wrap{ margin: 1rem 0 2rem; }
-.cd{
-  width: 190px; height:190px;
-  border-radius:50%;
-  background: conic-gradient(from 90deg, var(--lavender), var(--pink), var(--gold), var(--lavender));
-  box-shadow: 0 0 40px rgba(201,174,232,0.45), inset 0 0 30px rgba(0,0,0,0.4);
-  display:flex; align-items:center; justify-content:center;
-}
-.cd.spinning{ animation: spin 3.2s linear infinite; }
-.cd-hole{
-  width:34px; height:34px;
-  border-radius:50%;
-  background: var(--night);
-  box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
-}
-@keyframes spin{ to{ transform: rotate(360deg); } }
+  function setIcon(playing){
+    btn.querySelector('.icon').innerHTML = playing ? '&#10074;&#10074;' : '&#9658;';
+  }
 
-.play-btn{
-  width:56px; height:56px;
-  border-radius:50%;
-  border:1px solid rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.08);
-  color: var(--cream);
-  font-size:1.1rem;
-  cursor:pointer;
-  backdrop-filter: blur(6px);
-}
-.play-btn .icon{ display:inline-block; transform: translateX(2px); }
+  function playMessage(){
+    bgWasPlaying = !bgMusic.paused;
+    bgMusic.pause();
+    message.play().then(() => {
+      cd.classList.add('spinning');
+      setIcon(true);
+      miniPlayer.classList.remove('hidden');
+    }).catch(() => { /* assets/message.mp3 not added yet */ });
+  }
 
-/* ---------- question panel ---------- */
-.question-photo{
-  width: 120px; height:120px;
-  border-radius:50%;
-  overflow:hidden;
-  border: 2px solid var(--pink);
-  margin-bottom:1.4rem;
-  box-shadow: 0 0 30px rgba(246,201,218,0.4);
-}
-.question-photo img{ width:100%; height:100%; object-fit:cover; }
-.question-panel h2{ font-size: clamp(1.8rem,7vw,2.6rem); color: var(--pink); }
+  function stopMessage(){
+    message.pause();
+    cd.classList.remove('spinning');
+    setIcon(false);
+    if (bgWasPlaying){
+      bgMusic.play().then(() => miniPlayer.classList.remove('hidden')).catch(() => {});
+    } else {
+      miniPlayer.classList.add('hidden');
+    }
+  }
 
-.answer-row{ display:flex; gap:1.2rem; margin-top:2rem; position:relative; }
-.answer{
-  padding:.7rem 2rem;
-  border-radius: 999px;
-  border:1px solid rgba(255,255,255,0.3);
-  font-family:'Quicksand', sans-serif;
-  font-weight:600;
-  letter-spacing:.03em;
-  cursor:pointer;
-  background: rgba(255,255,255,0.08);
-  color: var(--cream);
-  transition: transform .2s ease, background .2s ease;
-}
-.answer.yes{ background: linear-gradient(120deg, var(--pink), var(--lavender)); color: var(--night); }
-.answer.no.dodging{ position:fixed; }
+  btn.addEventListener('click', () => {
+    if (message.paused) playMessage(); else stopMessage();
+  });
 
-.heartbreak{ margin-top:2rem; display:flex; flex-direction:column; align-items:center; gap:.8rem; }
-.heartbreak.hidden{ display:none; }
-.crack{
-  width:70px; height:60px;
-  background: var(--pink);
-  clip-path: path("M35 58 C10 40, 0 22, 12 10 C20 2, 32 4, 35 14 C38 4, 50 2, 58 10 C70 22, 60 40, 35 58 Z");
-  position:relative;
-  animation: shatter .6s ease forwards;
-}
-@keyframes shatter{
-  0%{ transform: scale(1); opacity:1; }
-  60%{ transform: scale(1.1) rotate(-4deg); }
-  100%{ transform: scale(0.9) rotate(6deg); opacity:.6; filter: drop-shadow(0 0 2px #000); }
-}
-.heartbreak p{ font-size:.85rem; color: rgba(251,244,248,0.7); font-style:italic; }
+  message.addEventListener('ended', stopMessage);
 
-/* ---------- reveal modal: huge heart + roses ---------- */
-.reveal-modal{
-  position:fixed; inset:0;
-  background: rgba(10,5,20,0.88);
-  backdrop-filter: blur(6px);
-  display:flex; align-items:center; justify-content:center;
-  z-index:20;
-}
-.reveal-modal.hidden{ display:none; }
-.reveal-card{
-  position:relative;
-  background: radial-gradient(ellipse at center, rgba(246,201,218,0.18), transparent 70%);
-  border-radius:18px;
-  padding:1.4rem;
-  width:min(88vw,360px);
-  text-align:center;
-  animation: revealPop .6s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes revealPop{
-  from{ transform: scale(0.6); opacity:0; }
-  to{ transform: scale(1); opacity:1; }
-}
-.reveal-card img{ width:100%; margin-bottom:1rem; }
-.reveal-card img.heart-clip{
-  aspect-ratio: 1/1;
-  object-fit: cover;
-  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C16 29 0 18.5 0 9.2 C0 3.6 4 0 8.6 0 C12 0 14.8 2 16 5 C17.2 2 20 0 23.4 0 C28 0 32 3.6 32 9.2 C32 18.5 16 29 16 29 Z'/></svg>");
-  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 29'><path d='M16 29 C16 29 0 18.5 0 9.2 C0 3.6 4 0 8.6 0 C12 0 14.8 2 16 5 C17.2 2 20 0 23.4 0 C28 0 32 3.6 32 9.2 C32 18.5 16 29 16 29 Z'/></svg>");
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  -webkit-mask-size: contain; mask-size: contain;
-  -webkit-mask-position: center; mask-position: center;
-  transform: scale(1.25);
-}
-.rose{
-  position:absolute;
-  font-size:1.7rem;
-  animation: roseFloat 3s ease-in-out infinite;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
-}
-.rose.r1{ top:-16px; left:-14px; }
-.rose.r2{ top:-16px; right:-14px; animation-delay:.4s; }
-.rose.r3{ bottom:44px; left:-20px; animation-delay:.8s; }
-.rose.r4{ bottom:44px; right:-20px; animation-delay:1.2s; }
-@keyframes roseFloat{
-  0%,100%{ transform: translateY(0) rotate(-6deg); }
-  50%{ transform: translateY(-9px) rotate(6deg); }
-}
-.close-reveal{
-  margin-top:.6rem;
-  background:none;
-  border:1px solid rgba(255,255,255,0.3);
-  color:var(--cream);
-  padding:.5rem 1.4rem;
-  border-radius:999px;
-  cursor:pointer;
-}
+  // Entering the recorded-message slide auto-starts it and ducks the
+  // background music; leaving it (before it finishes) stops it and
+  // brings the background music back.
+  document.addEventListener('slidechange', (e) => {
+    if (e.detail.id === 'player'){
+      if (message.paused) playMessage();
+    } else {
+      if (!message.paused) stopMessage();
+    }
+  });
 
-/* ---------- finale: only slide with kisses + roses ---------- */
-.finale-panel{ padding: 6vh 10vw; overflow:hidden; }
-.script-note{
-  font-family:'Dancing Script', cursive;
-  font-size: clamp(1.6rem, 6vw, 2.4rem);
-  line-height:1.5;
-  color: var(--pink);
-  max-width: 34ch;
-  position:relative;
-  z-index:2;
-}
-.signoff{
-  margin-top:2rem;
-  font-family:'Dancing Script', cursive;
-  font-size:1.4rem;
-  color: var(--lavender);
-  position:relative;
-  z-index:2;
-}
-.finale-petal{
-  position:fixed;
-  z-index:1;
-  pointer-events:none;
-  opacity:.55;
-}
+  miniPlayer.addEventListener('click', () => {
+    if (!message.paused){ stopMessage(); }
+    else if (!bgMusic.paused){ bgMusic.pause(); miniPlayer.classList.add('hidden'); }
+  });
+})();
 
-/* ---------- reduced motion ---------- */
-@media (prefers-reduced-motion: reduce){
-  .cd.spinning, .arrow, .crack, .mini-note, .rose{ animation: none !important; }
-  .track{ transition: none !important; }
-}
+/* ============================================================
+   "DOES SHE LOVE ME?" — the "no" button dodges the cursor and
+   is genuinely hard to land a click on. Only once it's actually
+   been pressed more than five times does the heartbreak show.
+   "Yes" opens a big heart-shaped reveal surrounded by roses.
+   ============================================================ */
+(function questionGame(){
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  const heartbreak = document.getElementById('heartbreak');
+  const revealModal = document.getElementById('revealModal');
+  const closeReveal = document.getElementById('closeReveal');
+  const answerRow = noBtn?.closest('.answer-row');
 
-/* ---------- small phones ---------- */
-@media (max-width:360px){
-  .cd{ width:150px; height:150px; }
-  .question-photo{ width:96px; height:96px; }
-  .poster--small{ width: min(42vw, 140px); }
-}
+  let dodges = 0;
+  let presses = 0;
+  const MAX_DODGES = 5;
+
+  function dodge(){
+    if (dodges >= MAX_DODGES || !answerRow) return;
+    dodges++;
+    const btnRect = noBtn.getBoundingClientRect();
+    const maxX = window.innerWidth - btnRect.width - 20;
+    const maxY = window.innerHeight - btnRect.height - 20;
+    const newX = Math.max(20, Math.random() * maxX);
+    const newY = Math.max(20, Math.random() * maxY);
+    noBtn.classList.add('dodging');
+    noBtn.style.left = newX + 'px';
+    noBtn.style.top = newY + 'px';
+  }
+
+  noBtn?.addEventListener('mouseenter', dodge);
+  noBtn?.addEventListener('touchstart', (e) => { e.preventDefault(); dodge(); }, { passive: false });
+
+  noBtn?.addEventListener('click', () => {
+    presses++;
+    if (presses > 5){
+      heartbreak.classList.remove('hidden');
+      setTimeout(() => {
+        heartbreak.classList.add('hidden');
+        noBtn.classList.remove('dodging');
+        noBtn.style.left = ''; noBtn.style.top = '';
+        dodges = 0; presses = 0;
+      }, 2400);
+    } else {
+      dodge();
+    }
+  });
+
+  yesBtn?.addEventListener('click', () => revealModal.classList.remove('hidden'));
+  closeReveal?.addEventListener('click', () => revealModal.classList.add('hidden'));
+})();
+
+/* ============================================================
+   FINALE PETALS — kisses + roses drifting erratically.
+   This is the ONLY slide that gets this ambient decoration.
+   ============================================================ */
+(function finalePetals(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const EMOJIS = ['&#128139;', '&#127801;']; // kiss mark, rose
+  let intervalId = null;
+
+  function rand(min, max){ return Math.random() * (max - min) + min; }
+
+  function spawnPetal(){
+    const petal = document.createElement('div');
+    petal.className = 'finale-petal';
+    petal.innerHTML = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+    const startX = rand(0, window.innerWidth - 20);
+    petal.style.left = startX + 'px';
+    petal.style.top = (window.innerHeight + 30) + 'px';
+    petal.style.fontSize = rand(14, 26) + 'px';
+    document.body.appendChild(petal);
+
+    const totalRise = window.innerHeight + 100;
+    const steps = 5 + Math.floor(rand(0, 3));
+    const keyframes = [];
+    for (let i = 0; i <= steps; i++){
+      const progress = i / steps;
+      keyframes.push({
+        transform: `translate(${rand(-80, 80)}px, ${-totalRise * progress}px) rotate(${rand(-40, 40)}deg) scale(${rand(0.8, 1.2)})`,
+        opacity: i === 0 ? 0 : (i === steps ? 0 : rand(0.35, 0.65)),
+        offset: progress
+      });
+    }
+    const anim = petal.animate(keyframes, { duration: rand(8000, 13000), easing: 'ease-in-out', fill: 'forwards' });
+    anim.onfinish = () => petal.remove();
+  }
+
+  document.addEventListener('slidechange', (e) => {
+    if (e.detail.id === 'finale' && !intervalId){
+      spawnPetal();
+      intervalId = setInterval(spawnPetal, 900);
+    } else if (e.detail.id !== 'finale' && intervalId){
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  });
+})();
